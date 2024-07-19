@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT-4 Free Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/gpt4js/dist/gpt4js.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+        }
+        h1 {
+            color: #333;
+        }
+        .chat-container {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 600px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            margin-top: 20px;
+        }
+        .chat-input {
+            display: flex;
+            margin-top: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+        .chat-input button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .chat-input button:hover {
+            background-color: #0056b3;
+        }
+        .chat-history {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .message.user {
+            text-align: right;
+        }
+        .message.user p {
+            background-color: #007bff;
+            color: white;
+            display: inline-block;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .message.bot p {
+            background-color: #e9ecef;
+            display: inline-block;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        pre code {
+            display: block;
+            padding: 10px;
+            background-color: #f4f4f4;
+            border-radius: 5px;
+            margin-top: 10px;
+            white-space: pre-wrap;
+            position: relative;
+        }
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 5px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .copy-button:hover {
+            background-color: #0056b3;
+        }
+        #newChatButton {
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #newChatButton:hover {
+            background-color: #c82333;
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 70px;
+            text-align: center;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            margin: 0 2px;
+            background-color: #999;
+            border-radius: 50%;
+            animation: typing 1.2s infinite ease-in-out;
+        }
+        .typing-indicator span:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
+            }
+        }
+        #signin-container {
+            margin-top: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #profileContainer {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+        }
+        #profileContainer img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #logoutButton {
+            display: none;
+            margin-top: 10px;
+            padding: 10px 20px;
+            border: none;
+            background-color: #dc3545;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #logoutButton:hover {
+            background-color: #c82333;
+        }
+    </style>
+</head>
+<body>
+    <h1>GPT-4 Free Chat</h1>
+    <div id="signin-container">
+        <button id="loginButton" onclick="authenticateYandex()">Sign in with Yandex</button>
+    </div>
+    <div id="profileContainer">
+        <img id="profileImage" src="" alt="Profile Picture" onclick="toggleLogoutButton()" />
+        <button id="logoutButton" onclick="signOut()">Log Out</button>
+    </div>
+    <div class="chat-container" id="chatContainer" style="display:none;">
+        <div class="chat-history" id="chatHistory"></div>
+        <div class="chat-input">
+            <input type="text" id="userMessage" onkeydown="checkEnter(event)" />
+            <button onclick="sendMessage()">Send</button>
+        </div>
+        <button id="newChatButton" onclick="startNewChat()">New Chat</button>
+    </div>
+
+    <script>
+        let messages = [
+            { role: "system", content: "You're an expert bot in programming." }
+        ];
+
+        function checkEnter(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const userMessage = document.getElementById("userMessage").value;
+            if (!userMessage) return;
+
+            // Добавляем сообщение пользователя в историю чата
+            addMessageToHistory('user', userMessage);
+
+            // Добавляем сообщение пользователя в историю для модели
+            messages.push({ role: "user", content: userMessage });
+
+            // Показываем индикатор ожидания
+            const typingIndicator = addTypingIndicator();
+
+            const options = {
+                provider: "Nextway",
+                model: "gpt-4o-free",
+            };
+
+            try {
+                const provider = GPT4js.createProvider(options.provider);
+                const responseText = await provider.chatCompletion(messages, options);
+
+                // Убираем индикатор ожидания
+                removeTypingIndicator(typingIndicator);
+
+                // Добавляем ответ бота в историю чата
+                addMessageToHistory('bot', responseText);
+
+                // Добавляем ответ бота в историю для модели
+                messages.push({ role: "assistant", content: responseText });
+
+                // Удаляем старые сообщения, если их больше 6 (3 пары запрос-ответ)
+                if (messages.length > 6) {
+                    messages = messages.slice(-6);
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                removeTypingIndicator(typingIndicator);
+                addMessageToHistory('bot', "An error occurred: " + error.message);
+            }
+
+            // Очищаем поле ввода
+            document.getElementById("userMessage").value = '';
+        }
+
+        function addMessageToHistory(role, message) {
+            const chatHistory = document.getElementById("chatHistory");
+            const messageElement = document.createElement("div");
+            messageElement.classList.add("message", role);
+
+            if (role === 'bot' && message.includes('```')) {
+                const parts = message.split(/```/);
+                messageElement.innerHTML = parts.map((part, index) => {
+                    if (index % 2 === 1) {
+                        return `<pre><code>${part.trim()}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
+                    } else {
+                        return `<p>${part}</p>`;
+                    }
+                }).join('');
+            } else {
+                messageElement.innerHTML = `<p>${message}</p>`;
+            }
+
+            chatHistory.appendChild(messageElement);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        function addTypingIndicator() {
+            const chatHistory = document.getElementById("chatHistory");
+            const typingIndicator = document.createElement("div");
+            typingIndicator.classList.add("message", "bot");
+            typingIndicator.innerHTML = `
+                <div class="typing-indicator">
+                    <span></span><span></span><span></span>
+                </div>`;
+            chatHistory.appendChild(typingIndicator);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+            return typingIndicator;
+        }
+
+        function removeTypingIndicator(indicator) {
+            indicator.remove();
+        }
+
+        function copyCode(button) {
+            const code = button.previousSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Code copied to clipboard!");
+            }).catch(err => {
+                console.error("Failed to copy code: ", err);
+            });
+        }
+
+        function startNewChat() {
+            messages = [
+                { role: "system", content: "You're an expert bot in programming." }
+            ];
+            document.getElementById("chatHistory").innerHTML = '';
+            document.getElementById("userMessage").value = '';
+        }
+
+        function authenticateYandex() {
+            const clientId = '70c4ac38427b4c9d976414b7d69d4a98';
+            const redirectUri = 'https://65d8f152-8c5c-41a8-a95a-70bd8aa713c2-00-4kbx6lmgutd7.kirk.replit.dev/';
+            const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+            window.location.href = authUrl;
+        }
+
+        function handleAuthResponse() {
+            const hash = window.location.hash.substr(1);
+            const result = hash.split('&').reduce((res, item) => {
+                const parts = item.split('=');
+                res[parts[0]] = parts[1];
+                return res;
+            }, {});
+
+            if (result.access_token) {
+                console.log('Yandex OAuth Access Token:', result.access_token);
+
+                // Получение профиля пользователя
+                fetch('https://login.yandex.ru/info?format=json&oauth_token=' + result.access_token)
+                    .then(response => response.json())
+                    .then(profile => {
+                        console.log('Profile:', profile);
+                        const profileImage = document.getElementById('profileImage');
+                        profileImage.src = profile.default_avatar_id ? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` : 'default-avatar.png';
+                        document.getElementById('signin-container').style.display = 'none';
+                        document.getElementById('chatContainer').style.display = 'flex';
+                        document.getElementById('profileContainer').style.display = 'flex';
+                    })
+                    .catch(error => console.error('Error fetching profile:', error));
+            }
+        }
+
+        function toggleLogoutButton() {
+            const logoutButton = document.getElementById('logoutButton');
+            if (logoutButton.style.display === 'none' || logoutButton.style.display === '') {
+                logoutButton.style.display = 'block';
+            } else {
+                logoutButton.style.display = 'none';
+            }
+        }
+
+        function signOut() {
+            // Очистка токена (для простоты, просто перезагрузим страницу)
+            window.location.href = '/';
+        }
+
+        // Проверка ответа авторизации при загрузке страницы
+        window.onload = handleAuthResponse;
+    </script>
+</body>
+</html>
