@@ -35,12 +35,14 @@
             display: flex;
             margin-top: 10px;
         }
-        .chat-input input {
+        .chat-input textarea {
             flex: 1;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
+            resize: vertical;
+            min-height: 50px;
         }
         .chat-input button {
             padding: 10px 20px;
@@ -154,7 +156,7 @@
             flex-direction: column;
             align-items: center;
         }
-        #profileContainer img {
+#profileContainer img {
             width: 40px;
             height: 40px;
             border-radius: 50%;
@@ -187,7 +189,7 @@
     <div class="chat-container" id="chatContainer" style="display:none;">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input">
-            <input type="text" id="userMessage" onkeydown="checkEnter(event)" />
+            <textarea id="userMessage" onkeydown="checkEnter(event)"></textarea>
             <button onclick="sendMessage()">Send</button>
         </div>
         <button id="newChatButton" onclick="startNewChat()">New Chat</button>
@@ -199,7 +201,7 @@
         ];
 
         function checkEnter(event) {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" &&!event.shiftKey) {
                 sendMessage();
             }
         }
@@ -289,7 +291,7 @@
         }
 
         function copyCode(button) {
-            const code = button.previousSibling.textContent;
+            const code= button.previousSibling.textContent;
             navigator.clipboard.writeText(code).then(() => {
                 alert("Code copied to clipboard!");
             }).catch(err => {
@@ -325,16 +327,16 @@
 
                 // Получение профиля пользователя
                 fetch('https://login.yandex.ru/info?format=json&oauth_token=' + result.access_token)
-                    .then(response => response.json())
-                    .then(profile => {
+                   .then(response => response.json())
+                   .then(profile => {
                         console.log('Profile:', profile);
                         const profileImage = document.getElementById('profileImage');
-                        profileImage.src = profile.default_avatar_id ? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` : 'default-avatar.png';
+                        profileImage.src = profile.default_avatar_id? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` : 'default-avatar.png';
                         document.getElementById('signin-container').style.display = 'none';
                         document.getElementById('chatContainer').style.display = 'flex';
                         document.getElementById('profileContainer').style.display = 'flex';
                     })
-                    .catch(error => console.error('Error fetching profile:', error));
+                   .catch(error => console.error('Error fetching profile:', error));
             }
         }
 
