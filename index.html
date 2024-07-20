@@ -35,12 +35,15 @@
             display: flex;
             margin-top: 10px;
         }
-        .chat-input input {
+        .chat-input textarea {
             flex: 1;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
+            resize: none; /* Убираем возможность ручного изменения размера */
+            overflow-y: auto;
+            max-height: 100px; /* Ограничиваем максимальную высоту текстового поля */
         }
         .chat-input button {
             padding: 10px 20px;
@@ -198,7 +201,7 @@
     <div class="chat-container" id="chatContainer" style="display:none;">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input">
-            <input type="text" id="userMessage" onkeydown="checkEnter(event)" />
+            <textarea id="userMessage" rows="1" onkeydown="checkEnter(event)" oninput="adjustTextareaHeight(this)"></textarea>
             <button onclick="sendMessage()">Send</button>
         </div>
         <button id="newChatButton" onclick="startNewChat()">New Chat</button>
@@ -214,9 +217,15 @@
         };
 
         function checkEnter(event) {
-            if (event.key === 'Enter') {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Предотвращаем создание новой строки
                 sendMessage();
             }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto'; // Сбрасываем высоту
+            textarea.style.height = (textarea.scrollHeight > 100 ? 100 : textarea.scrollHeight) + 'px'; // Устанавливаем новую высоту
         }
 
         async function sendMessage() {
@@ -225,16 +234,17 @@
 
             addMessageToHistory('user', userMessage);
             document.getElementById("userMessage").value = '';
+            adjustTextareaHeight(document.getElementById("userMessage"));
 
             messages.push({ role: "user", content: userMessage });
 
             const typingIndicator = showTypingIndicator();
 
-            const provider = GPT4js.createProvider(options.provider);
             try {
+                const provider = GPT4js.createProvider(options.provider);
                 const response = await provider.chatCompletion(messages, options);
-                messages.push({ role: "bot", content: response });
-                addMessageToHistory('bot', response);
+                addMessageToHistory('bot', response.choices[0].message.content);
+                messages.push({ role: "bot", content: response.choices[0].message.content });
             } catch (error) {
                 console.error("Error:", error);
                 addMessageToHistory('bot', 'An error occurred while processing your request.');
@@ -257,7 +267,7 @@
                 const parts = message.split(/```/);
                 messageElement.innerHTML = parts.map((part, index) => {
                     if (index % 2 === 1) {
-                        return `<pre><code>${escapeHtml(part.trim())}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
+                        return `<pre><code>${escapeHtml(part.trim())}</code></pre><button class="copy-button" onclick="copyCode(this)">Copy</button>`;
                     } else {
                         return `<p>${escapeHtml(part)}</p>`;
                     }
@@ -320,8 +330,8 @@
         }
 
         function authenticateYandex() {
-            const clientId = 'YOUR_YANDEX_CLIENT_ID';
-            const redirectUri = 'YOUR_REDIRECT_URI';
+            const clientId = 'd1986466f9b146f5ba62ccfea02d0258';
+            const redirectUri = 'https://igor-chuk.github.io/ichuk.gpt4omni.github.io/';
             const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
             window.location.href = authUrl;
         }
