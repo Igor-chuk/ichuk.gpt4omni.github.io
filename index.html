@@ -35,14 +35,12 @@
             display: flex;
             margin-top: 10px;
         }
-        .chat-input textarea {
+        .chat-input input {
             flex: 1;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
-            resize: vertical;
-            min-height: 50px;
         }
         .chat-input button {
             padding: 10px 20px;
@@ -175,32 +173,32 @@
         #logoutButton:hover {
             background-color: #c82333;
         }
-        #loginButton{
-            padding: 10px 20px;
+        .speak-button {
+            background: none;
             border: none;
-            background-color: #007bff;
-            color: white;
-            border-radius: 5px;
+            color: #007bff;
             cursor: pointer;
+            margin-left: 10px;
         }
-        #loginButton:hover{
-            background-color: #0056b3;
+        .speak-button:hover {
+            color: #0056b3;
         }
     </style>
 </head>
 <body>
     <h1>GPT-4 Free Chat</h1>
     <div id="signin-container">
-        <button id="loginButton" onclick="authenticateYandex()">Sign in with Yandex</button>
+        <!-- Добавьте сюда кнопку для авторизации через Яндекс -->
+        <button onclick="authenticateYandex()">Sign in with Yandex</button>
     </div>
-    <div id="profileContainer">
+    <div id="profileContainer" style="display:none;">
         <img id="profileImage" src="" alt="Profile Picture" onclick="toggleLogoutButton()" />
         <button id="logoutButton" onclick="signOut()">Log Out</button>
     </div>
     <div class="chat-container" id="chatContainer" style="display:none;">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input">
-            <textarea id="userMessage" onkeydown="checkEnter(event)"></textarea>
+            <input type="text" id="userMessage" onkeydown="checkEnter(event)" />
             <button onclick="sendMessage()">Send</button>
         </div>
         <button id="newChatButton" onclick="startNewChat()">New Chat</button>
@@ -208,58 +206,46 @@
 
     <script>
         let messages = [
-            { role: "system", content: "You're an expert bot in programming." }
+            { role: "system", content: "You're an expert bot in programming." },
         ];
+        const options = {
+            provider: "Nextway",
+            model: "gpt-4o-free",
+        };
 
         function checkEnter(event) {
-            if (event.key === "Enter" &&!event.shiftKey) {
+            if (event.key === 'Enter') {
                 sendMessage();
             }
         }
 
         async function sendMessage() {
             const userMessage = document.getElementById("userMessage").value;
-            if (!userMessage) return;
+            if (!userMessage.trim()) return;
 
-            // Добавляем сообщение пользователя в историю чата
             addMessageToHistory('user', userMessage);
+            document.getElementById("userMessage").value = '';
 
-            // Добавляем сообщение пользователя в историю для модели
             messages.push({ role: "user", content: userMessage });
 
-            // Показываем индикатор ожидания
-            const typingIndicator = addTypingIndicator();
+            const typingIndicator = showTypingIndicator();
 
-            const options = {
-                provider: "Nextway",
-                model: "gpt-4o-free",
-            };
-
+            const provider = GPT4js.createProvider(options.provider);
             try {
-                const provider = GPT4js.createProvider(options.provider);
-                const responseText = await provider.chatCompletion(messages, options);
-
-                // Убираем индикатор ожидания
-                removeTypingIndicator(typingIndicator);
-
-                // Добавляем ответ бота в историю чата
-                addMessageToHistory('bot', responseText);
-
-                // Добавляем ответ бота в историю для модели
-                messages.push({ role: "assistant", content: responseText });
-
-                // Удаляем старые сообщения, если их больше 6 (3 пары запрос-ответ)
-                if (messages.length > 6) {
-                    messages = messages.slice(-6);
-                }
+                const response = await provider.chatCompletion(messages, options);
+                messages.push({ role: "bot", content: response });
+                addMessageToHistory('bot', response);
             } catch (error) {
                 console.error("Error:", error);
-                removeTypingIndicator(typingIndicator);
-                addMessageToHistory('bot', "An error occurred: " + error.message);
+                addMessageToHistory('bot', 'An error occurred while processing your request.');
+            } finally {
+                hideTypingIndicator(typingIndicator);
             }
 
-            // Очищаем поле ввода
-            document.getElementById("userMessage").value = '';
+            // Ограничение истории до последних 10 сообщений (5 пар вопрос-ответ)
+            if (messages.length > 10) {
+                messages = messages.slice(messages.length - 10);
+            }
         }
 
         function addMessageToHistory(role, message) {
@@ -271,56 +257,71 @@
                 const parts = message.split(/```/);
                 messageElement.innerHTML = parts.map((part, index) => {
                     if (index % 2 === 1) {
-                        return `<pre><code>${part.trim()}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
+                        return `<pre><code>${escapeHtml(part.trim())}</code><button class="copy-button" onclick="copyCode(this)">Copy</button></pre>`;
                     } else {
-                        return `<p>${part}</p>`;
+                        return `<p>${escapeHtml(part)}</p>`;
                     }
                 }).join('');
             } else {
-                messageElement.innerHTML = `<p>${message}</p>`;
+                messageElement.innerHTML = `<p>${escapeHtml(message)}</p>`;
+                if (role === 'bot') {
+                    const speakButton = document.createElement("button");
+                    speakButton.textContent = "🔊";
+                    speakButton.classList.add("speak-button");
+                    speakButton.onclick = () => speak(message);
+                    messageElement.appendChild(speakButton);
+                }
             }
 
             chatHistory.appendChild(messageElement);
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
-        function addTypingIndicator() {
+        function escapeHtml(text) {
+            return text.replace(/&/g, "&amp;")
+                       .replace(/</g, "&lt;")
+                       .replace(/>/g, "&gt;")
+                       .replace(/"/g, "&quot;")
+                       .replace(/'/g, "&#039;");
+        }
+
+        function copyCode(button) {
+            const code = button.previousSibling.innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                button.innerText = 'Copied!';
+                setTimeout(() => {
+                    button.innerText = 'Copy';
+                }, 2000);
+            });
+        }
+
+        function showTypingIndicator() {
             const chatHistory = document.getElementById("chatHistory");
             const typingIndicator = document.createElement("div");
             typingIndicator.classList.add("message", "bot");
-            typingIndicator.innerHTML = `
-                <div class="typing-indicator">
-                    <span></span><span></span><span></span>
-                </div>`;
+            typingIndicator.innerHTML = `<div class="typing-indicator">
+                                            <span></span><span></span><span></span>
+                                         </div>`;
             chatHistory.appendChild(typingIndicator);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return typingIndicator;
         }
 
-        function removeTypingIndicator(indicator) {
-            indicator.remove();
-        }
-
-        function copyCode(button) {
-            const code= button.previousSibling.textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                alert("Code copied to clipboard!");
-            }).catch(err => {
-                console.error("Failed to copy code: ", err);
-            });
+        function hideTypingIndicator(typingIndicator) {
+            const chatHistory = document.getElementById("chatHistory");
+            chatHistory.removeChild(typingIndicator);
         }
 
         function startNewChat() {
             messages = [
-                { role: "system", content: "You're an expert bot in programming." }
+                { role: "system", content: "You're an expert bot in programming." },
             ];
             document.getElementById("chatHistory").innerHTML = '';
-            document.getElementById("userMessage").value = '';
         }
 
         function authenticateYandex() {
-            const clientId = 'd1986466f9b146f5ba62ccfea02d0258';
-            const redirectUri = 'https://igor-chuk.github.io/ichuk.gpt4omni.github.io/';
+            const clientId = 'YOUR_YANDEX_CLIENT_ID';
+            const redirectUri = 'YOUR_REDIRECT_URI';
             const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
             window.location.href = authUrl;
         }
@@ -338,34 +339,34 @@
 
                 // Получение профиля пользователя
                 fetch('https://login.yandex.ru/info?format=json&oauth_token=' + result.access_token)
-                   .then(response => response.json())
-                   .then(profile => {
+                    .then(response => response.json())
+                    .then(profile => {
                         console.log('Profile:', profile);
                         const profileImage = document.getElementById('profileImage');
-                        profileImage.src = profile.default_avatar_id? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` : 'default-avatar.png';
+                        profileImage.src = profile.default_avatar_id 
+                            ? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` 
+                            : 'default-avatar.png';
                         document.getElementById('signin-container').style.display = 'none';
                         document.getElementById('chatContainer').style.display = 'flex';
                         document.getElementById('profileContainer').style.display = 'flex';
                     })
-                   .catch(error => console.error('Error fetching profile:', error));
+                    .catch(error => console.error('Error fetching profile:', error));
             }
         }
 
         function toggleLogoutButton() {
             const logoutButton = document.getElementById('logoutButton');
-            if (logoutButton.style.display === 'none' || logoutButton.style.display === '') {
-                logoutButton.style.display = 'block';
-            } else {
-                logoutButton.style.display = 'none';
-            }
+            logoutButton.style.display = (logoutButton.style.display === 'none' || logoutButton.style.display === '') 
+                ? 'block' 
+                : 'none';
         }
 
         function signOut() {
-            // Очистка токена (для простоты, просто перезагрузим страницу)
-            window.location.href = '/ichuk.gpt4omni.github.io';
+            document.getElementById('signin-container').style.display = 'flex';
+            document.getElementById('chatContainer').style.display = 'none';
+            document.getElementById('profileContainer').style.display = 'none';
         }
 
-        // Проверка ответа авторизации при загрузке страницы
         window.onload = handleAuthResponse;
     </script>
 </body>
