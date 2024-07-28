@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -41,9 +42,9 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
-            resize: none; /* Remove manual resize */
+            resize: none; /* Убираем возможность ручного изменения размера */
             overflow-y: auto;
-            max-height: 100px; /* Limit max height */
+            max-height: 100px; /* Ограничиваем максимальную высоту текстового поля */
         }
         .chat-input button {
             padding: 10px 20px;
@@ -181,14 +182,14 @@
 <body>
     <h1>GPT-4 Free Chat</h1>
     <div id="signin-container">
-        <!-- Add your Yandex sign-in button here -->
+        <!-- Добавьте сюда кнопку для авторизации через Яндекс -->
         <button onclick="authenticateYandex()">Sign in with Yandex</button>
     </div>
-    <div id="profileContainer">
+    <div id="profileContainer" style="display:none;">
         <img id="profileImage" src="" alt="Profile Picture" onclick="toggleLogoutButton()" />
         <button id="logoutButton" onclick="signOut()">Log Out</button>
     </div>
-    <div class="chat-container" id="chatContainer">
+    <div class="chat-container" id="chatContainer" style="display:none;">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input">
             <textarea id="userMessage" rows="1" onkeydown="checkEnter(event)" oninput="adjustTextareaHeight(this)"></textarea>
@@ -208,14 +209,14 @@
 
         function checkEnter(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
+                event.preventDefault(); // Предотвращаем создание новой строки
                 sendMessage();
             }
         }
 
         function adjustTextareaHeight(textarea) {
-            textarea.style.height = 'auto';
-            textarea.style.height = (textarea.scrollHeight > 100 ? 100 : textarea.scrollHeight) + 'px';
+            textarea.style.height = 'auto'; // Сбрасываем высоту
+            textarea.style.height = (textarea.scrollHeight > 100 ? 100 : textarea.scrollHeight) + 'px'; // Устанавливаем новую высоту
         }
 
         async function sendMessage() {
@@ -242,6 +243,7 @@
                 hideTypingIndicator(typingIndicator);
             }
 
+            // Ограничение истории до последних 10 сообщений (5 пар вопрос-ответ)
             if (messages.length > 10) {
                 messages = messages.slice(messages.length - 10);
             }
@@ -252,18 +254,17 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message", role);
 
-            if (role === 'bot' && message.includes('```')) {
-                const parts = message.split(/```/);
+            if (role === 'bot' && message.includes('
+')) {
+                const parts = message.split(/
+/);
                 messageElement.innerHTML = parts.map((part, index) => {
                     if (index % 2 === 1) {
-                        return `<pre><code>${escapeHtml(part.trim())}</code></pre><button class="copy-button" onclick="copyCode(this)">Copy</button>`;
+                        return <pre><code>${escapeHtml(part.trim())}</code></pre><button class="copy-button" onclick="copyCode(this)">Copy</button>;
                     } else {
-                        return `<p>${escapeHtml(part)}</p>`;
+                        return <p>${escapeHtml(part)}</p>;
                     }
                 }).join('');
-            } else {
-                messageElement.innerHTML = `<p>${escapeHtml(message)}</p>`;
-            }
 
             chatHistory.appendChild(messageElement);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -291,9 +292,9 @@
             const chatHistory = document.getElementById("chatHistory");
             const typingIndicator = document.createElement("div");
             typingIndicator.classList.add("message", "bot");
-            typingIndicator.innerHTML = `<div class="typing-indicator">
+            typingIndicator.innerHTML = <div class="typing-indicator">
                                             <span></span><span></span><span></span>
-                                         </div>`;
+                                         </div>;
             chatHistory.appendChild(typingIndicator);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return typingIndicator;
@@ -313,8 +314,8 @@
 
         function authenticateYandex() {
             const clientId = 'd1986466f9b146f5ba62ccfea02d0258';
-            const redirectUri = 'https://your-redirect-uri-here.com';
-            const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
+            const redirectUri = 'https://igor-chuk.github.io/ichuk.gpt4omni.github.io/';
+            const authUrl = https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri};
             window.location.href = authUrl;
         }
 
@@ -329,13 +330,14 @@
             if (result.access_token) {
                 console.log('Yandex OAuth Access Token:', result.access_token);
 
+                // Получение профиля пользователя
                 fetch('https://login.yandex.ru/info?format=json&oauth_token=' + result.access_token)
                     .then(response => response.json())
                     .then(profile => {
                         console.log('Profile:', profile);
                         const profileImage = document.getElementById('profileImage');
                         profileImage.src = profile.default_avatar_id 
-                            ? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` 
+                            ? https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200 
                             : 'default-avatar.png';
                         document.getElementById('signin-container').style.display = 'none';
                         document.getElementById('chatContainer').style.display = 'flex';
