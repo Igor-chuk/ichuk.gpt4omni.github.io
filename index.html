@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -254,15 +253,13 @@
             const messageElement = document.createElement("div");
             messageElement.classList.add("message", role);
 
-            if (role === 'bot' && message.includes('
-')) {
-                const parts = message.split(/
-/);
+            if (role === 'bot' && message.includes('```')) {
+                const parts = message.split(/```/);
                 messageElement.innerHTML = parts.map((part, index) => {
                     if (index % 2 === 1) {
-                        return <pre><code>${escapeHtml(part.trim())}</code></pre><button class="copy-button" onclick="copyCode(this)">Copy</button>;
+                        return `<pre><code>${escapeHtml(part.trim())}</code></pre><button class="copy-button" onclick="copyCode(this)">Copy</button>`;
                     } else {
-                        return <p>${escapeHtml(part)}</p>;
+                        return `<p>${escapeHtml(part)}</p>`;
                     }
                 }).join('');
 
@@ -292,9 +289,9 @@
             const chatHistory = document.getElementById("chatHistory");
             const typingIndicator = document.createElement("div");
             typingIndicator.classList.add("message", "bot");
-            typingIndicator.innerHTML = <div class="typing-indicator">
+            typingIndicator.innerHTML = `<div class="typing-indicator">
                                             <span></span><span></span><span></span>
-                                         </div>;
+                                         </div>`;
             chatHistory.appendChild(typingIndicator);
             chatHistory.scrollTop = chatHistory.scrollHeight;
             return typingIndicator;
@@ -315,7 +312,7 @@
         function authenticateYandex() {
             const clientId = 'd1986466f9b146f5ba62ccfea02d0258';
             const redirectUri = 'https://igor-chuk.github.io/ichuk.gpt4omni.github.io/';
-            const authUrl = https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri};
+            const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
             window.location.href = authUrl;
         }
 
@@ -337,7 +334,7 @@
                         console.log('Profile:', profile);
                         const profileImage = document.getElementById('profileImage');
                         profileImage.src = profile.default_avatar_id 
-                            ? https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200 
+                            ? `https://avatars.mds.yandex.net/get-yapic/${profile.default_avatar_id}/islands-200` 
                             : 'default-avatar.png';
                         document.getElementById('signin-container').style.display = 'none';
                         document.getElementById('chatContainer').style.display = 'flex';
