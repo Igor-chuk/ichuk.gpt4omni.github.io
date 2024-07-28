@@ -233,7 +233,7 @@
             try {
                 const provider = GPT4js.createProvider(options.provider);
                 const response = await provider.chatCompletion(messages, options);
-                addMessageToHistory('bot', response.choices[0].message.content);
+                addMessageToHistory('bot', response.choices[2].message.content);
                 messages.push({ role: "bot", content: response.choices[0].message.content });
             } catch (error) {
                 console.error("Error:", error);
