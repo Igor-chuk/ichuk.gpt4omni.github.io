@@ -176,16 +176,6 @@
         #logoutButton:hover {
             background-color: #c82333;
         }
-        .speak-button {
-            background: none;
-            border: none;
-            color: #007bff;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        .speak-button:hover {
-            color: #0056b3;
-        }
     </style>
 </head>
 <body>
@@ -272,16 +262,6 @@
                         return `<p>${escapeHtml(part)}</p>`;
                     }
                 }).join('');
-            } else {
-                messageElement.innerHTML = `<p>${escapeHtml(message)}</p>`;
-                if (role === 'bot') {
-                    const speakButton = document.createElement("button");
-                    speakButton.textContent = "🔊";
-                    speakButton.classList.add("speak-button");
-                    speakButton.onclick = () => speak(message);
-                    messageElement.appendChild(speakButton);
-                }
-            }
 
             chatHistory.appendChild(messageElement);
             chatHistory.scrollTop = chatHistory.scrollHeight;
