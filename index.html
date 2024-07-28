@@ -41,9 +41,9 @@
             border: 1px solid #ccc;
             border-radius: 5px;
             margin-right: 10px;
-            resize: none; /* Убираем возможность ручного изменения размера */
+            resize: none; /* Remove manual resize */
             overflow-y: auto;
-            max-height: 100px; /* Ограничиваем максимальную высоту текстового поля */
+            max-height: 100px; /* Limit max height */
         }
         .chat-input button {
             padding: 10px 20px;
@@ -181,14 +181,14 @@
 <body>
     <h1>GPT-4 Free Chat</h1>
     <div id="signin-container">
-        <!-- Добавьте сюда кнопку для авторизации через Яндекс -->
+        <!-- Add your Yandex sign-in button here -->
         <button onclick="authenticateYandex()">Sign in with Yandex</button>
     </div>
-    <div id="profileContainer" style="display:none;">
+    <div id="profileContainer">
         <img id="profileImage" src="" alt="Profile Picture" onclick="toggleLogoutButton()" />
         <button id="logoutButton" onclick="signOut()">Log Out</button>
     </div>
-    <div class="chat-container" id="chatContainer" style="display:none;">
+    <div class="chat-container" id="chatContainer">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input">
             <textarea id="userMessage" rows="1" onkeydown="checkEnter(event)" oninput="adjustTextareaHeight(this)"></textarea>
@@ -208,14 +208,14 @@
 
         function checkEnter(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault(); // Предотвращаем создание новой строки
+                event.preventDefault();
                 sendMessage();
             }
         }
 
         function adjustTextareaHeight(textarea) {
-            textarea.style.height = 'auto'; // Сбрасываем высоту
-            textarea.style.height = (textarea.scrollHeight > 100 ? 100 : textarea.scrollHeight) + 'px'; // Устанавливаем новую высоту
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight > 100 ? 100 : textarea.scrollHeight) + 'px';
         }
 
         async function sendMessage() {
@@ -233,7 +233,7 @@
             try {
                 const provider = GPT4js.createProvider(options.provider);
                 const response = await provider.chatCompletion(messages, options);
-                addMessageToHistory('bot', response.choices[2].message.content);
+                addMessageToHistory('bot', response.choices[0].message.content);
                 messages.push({ role: "bot", content: response.choices[0].message.content });
             } catch (error) {
                 console.error("Error:", error);
@@ -242,7 +242,6 @@
                 hideTypingIndicator(typingIndicator);
             }
 
-            // Ограничение истории до последних 10 сообщений (5 пар вопрос-ответ)
             if (messages.length > 10) {
                 messages = messages.slice(messages.length - 10);
             }
@@ -262,6 +261,9 @@
                         return `<p>${escapeHtml(part)}</p>`;
                     }
                 }).join('');
+            } else {
+                messageElement.innerHTML = `<p>${escapeHtml(message)}</p>`;
+            }
 
             chatHistory.appendChild(messageElement);
             chatHistory.scrollTop = chatHistory.scrollHeight;
@@ -311,7 +313,7 @@
 
         function authenticateYandex() {
             const clientId = 'd1986466f9b146f5ba62ccfea02d0258';
-            const redirectUri = 'https://igor-chuk.github.io/ichuk.gpt4omni.github.io/';
+            const redirectUri = 'https://your-redirect-uri-here.com';
             const authUrl = `https://oauth.yandex.com/authorize?response_type=token&client_id=${clientId}&redirect_uri=${redirectUri}`;
             window.location.href = authUrl;
         }
@@ -327,7 +329,6 @@
             if (result.access_token) {
                 console.log('Yandex OAuth Access Token:', result.access_token);
 
-                // Получение профиля пользователя
                 fetch('https://login.yandex.ru/info?format=json&oauth_token=' + result.access_token)
                     .then(response => response.json())
                     .then(profile => {
